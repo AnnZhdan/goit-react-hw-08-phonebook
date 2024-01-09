@@ -1,40 +1,57 @@
-import { useState } from 'react';
-import { Form, Input, Label, ButtonAdd } from './ContactForm.styled';
-import { useDispatch, useSelector } from 'react-redux';
-import { getPhoneBookValue } from '../../redux/selektor';
+import * as React from 'react';
+import { useState, useEffect } from 'react';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
-import { postContactThunk } from 'api/api';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  selectIsContactAdd,
+  selectPhoneBookValue,
+} from '../../redux/phoneBook/phoneSelector';
+import { postContactThunk } from '../../api/fetchContacts';
+import { Avatar, Button, TextField, Box, Typography } from '@mui/material';
+import ContactsIcon from '@mui/icons-material/Contacts';
+import { LoadAdd } from 'components/Loader/Loader';
+import { avatarStyle } from '../../pages/StylePages';
+
+export const options = {
+  width: '300px',
+  position: 'right-bottom',
+  timeout: 2000,
+  fontSize: '20px',
+};
 
 export const ContactForm = () => {
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
+  const [add, setAdd] = useState(false);
+
   const dispatch = useDispatch();
-  const phoneBook = useSelector(getPhoneBookValue);
+  const phoneBook = useSelector(selectPhoneBookValue);
+  const isContactAdd = useSelector(selectIsContactAdd);
+
+  useEffect(() => {
+    setAdd(false);
+  }, [phoneBook]);
+
+  useEffect(() => {
+    if (isContactAdd) {
+      reset();
+    }
+  }, [isContactAdd]);
 
   const onSubmitAddContact = evt => {
     evt.preventDefault();
+    const newObj = { name, number };
 
-    const obj = { name, number };
-
-    if (newName(phoneBook, obj) !== undefined) {
-      Notify.warning(`${obj.name} is already in contacts`, {
-        width: '300px',
-        position: 'right-top',
-        timeout: 2000,
-        fontSize: '20px',
-      });
-      reset();
+    if (isNameNew(phoneBook, newObj) !== undefined) {
+      Notify.warning(`${newObj.name} is already in contacts`, options);
       return;
     }
-
-    dispatch(postContactThunk(obj));
-
-    reset();
+    dispatch(postContactThunk(newObj));
   };
 
-  const newName = (phoneBook, obj) => {
+  const isNameNew = (phoneBook, newObj) => {
     return phoneBook.find(
-      ({ name }) => name.toLowerCase() === obj.name.toLowerCase()
+      ({ name }) => name.toLowerCase() === newObj.name.toLowerCase()
     );
   };
 
@@ -59,32 +76,53 @@ export const ContactForm = () => {
   };
 
   return (
-    <Form onSubmit={onSubmitAddContact}>
-      <Label>
-        Name
-        <Input
+    <>
+      <Avatar sx={avatarStyle}>
+        <ContactsIcon />
+      </Avatar>
+      <Typography component="h1" variant="h5">
+        Add Contact
+      </Typography>
+      <Box component="form" onSubmit={onSubmitAddContact} sx={{ mt: 1 }}>
+        <TextField
+          sx={{ backgroundColor: 'rgba(208, 224, 241, 0.822)' }}
+          inputProps={{
+            inputMode: 'text',
+            pattern: '^[a-zA-Zа-яА-Я]+(([a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$',
+          }}
+          margin="normal"
+          fullWidth
+          label="Name"
           type="text"
           name="name"
           value={name}
-          pattern="^[a-zA-Zа-яА-Я]+(([' \-][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$"
-          title="Name may contain only letters, apostrophe, dash and spaces"
+          title="Name may contain only letters and spaces."
           required
           onChange={onChangeInput}
         />
-      </Label>
-      <Label>
-        Phone number
-        <Input
+        <TextField
+          sx={{ backgroundColor: 'rgba(208, 224, 241, 0.822)' }}
+          inputProps={{ inputMode: 'tel', pattern: '[0-9]*' }}
+          margin="normal"
+          fullWidth
+          label="Phone number"
           type="tel"
           name="number"
           value={number}
-          pattern="\+?\d{1,4}?[ .\-\s]?\(?\d{1,3}?\)?[ .\-\s]?\d{1,4}[ .\-\s]?\d{1,4}[ .\-\s]?\d{1,9}"
-          title="Phone number must be digits and can contain spaces, dashes, parentheses and can start with +"
+          title="Phone number must be only digits"
           required
           onChange={onChangeInput}
         />
-      </Label>
-      <ButtonAdd type="submit">Add contact</ButtonAdd>
-    </Form>
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          sx={{ mt: 3, mb: 2, display: 'flex', gap: 3 }}
+        >
+          {add && <LoadAdd />}
+          <p>Add contact</p>
+        </Button>
+      </Box>
+    </>
   );
 };

@@ -1,20 +1,22 @@
-import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import { createAsyncThunk } from '@reduxjs/toolkit';
+import { Notify } from 'notiflix/build/notiflix-notify-aio';
+import { options } from '../components/ContactForm/ContactForm';
 
-const URL = 'https://6597137e668d248edf228af8.mockapi.io/contacts/contacts';
+axios.defaults.baseURL = 'https://connections-api.herokuapp.com';
 
 const getContacts = async (_, thunkAPI) => {
   try {
-    const response = await axios.get(URL);
+    const response = await axios.get('/contacts');
     return response.data;
   } catch (e) {
     return thunkAPI.rejectWithValue(e.message);
   }
 };
-
 const postContact = async (newContact, thunkAPI) => {
   try {
-    const response = await axios.post(URL, newContact);
+    const response = await axios.post('/contacts', newContact);
+    Notify.success(`Contact added successfully`, options);
     return response.data;
   } catch (e) {
     return thunkAPI.rejectWithValue(e.message);
@@ -23,7 +25,8 @@ const postContact = async (newContact, thunkAPI) => {
 
 const delContact = async (contactId, thunkAPI) => {
   try {
-    const response = await axios.delete(`${URL}/${contactId}`);
+    const response = await axios.delete(`/contacts/${contactId}`);
+    Notify.warning(`Contact delete successfully`, options);
     return response.data;
   } catch (e) {
     return thunkAPI.rejectWithValue(e.message);
@@ -31,7 +34,7 @@ const delContact = async (contactId, thunkAPI) => {
 };
 
 export const getContactsThunk = createAsyncThunk(
-  'phoneBook/getContacts',
+  'phonebook/getContacts',
   getContacts
 );
 
